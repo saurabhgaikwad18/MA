@@ -1,0 +1,26 @@
+section .data
+msg db "hi Mitesh" ,0ah
+msg_len equ $-msg
+msg1 db "hi Sumit" ,0ah
+msg1_len equ $-msg1
+msg2 db "hi Aditya" ,0ah
+msg2_len equ $-msg1
+%macro print 2
+mov rax,1
+mov rdi,1
+mov rsi,%1
+mov rdx,%2
+syscall
+%endmacro
+%macro Exit 0
+mov rax,60
+mov rdi,0
+syscall
+%endmacro
+section .text
+global _start
+_start:
+print msg,msg_len
+print msg1,msg1_len
+print msg2,msg2_len
+Exit

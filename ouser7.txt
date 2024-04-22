@@ -1,0 +1,100 @@
+section .data
+sblock db 10h,20h,30h,40h,50h
+dblock times 5 db 0h
+space db " "
+smsg db 0ah,"source block = "
+slen equ $-smsg
+dmsg db 0ah,"destination block = "
+dlen equ $-dmsg
+%macro print 2
+mov rax,1
+mov rdi,1
+mov rsi,%1
+mov rdx,%2
+syscall
+%endmacro
+%macro Exit 0
+mov rax,60
+mov rdi,0
+syscall
+%endmacro
+;-----------------------------------------------------------------------------------
+section .bss
+char_ans resb 2
+;----------------------------------------------------------------------------------
+section .text
+global _start
+_start:
+print smsg,slen
+mov rsi,sblock
+call displayBlock
+print dmsg,dlen
+mov rsi,dblock-2
+call displayBlock
+call block_trans
+print smsg,slen
+mov rsi,sblock
+call displayBlock
+print dmsg,dlen
+mov rsi,dblock-2
+call displayBlock
+Exit
+;----------------------------------------------------------------------------------
+block_trans:
+mov rsi,sblock+4 ;you can get in bt diagram
+mov rdi,dblock+2
+mov rcx,5
+roll:
+mov al,[rsi]
+mov [rdi],al
+dec rsi
+dec rdi
+dec rcx
+jnz roll
+ret
+;------------------------------------------------------------------------------------
+block_transInstruction:
+mov rsi,sblock+4
+mov rdi,dblock+2
+mov rcx,5
+roll_i:
+mov al,[rsi]
+mov [rdi],al
+std ;just std instead of cld 
+rep movsb
+ret
+;------------------------------------------------------------------------------------
+displayBlock:
+mov rbp,5
+next_num:
+mov al,[rsi]
+push rsi
+call display
+print space,1
+pop rsi
+inc rsi
+dec rbp
+jnz next_num
+ret
+;------------------------------------------------------------------------------------
+display: ;procedure
+mov rbx, 16 ;to divide by 16
+mov rcx,2 ;for getting in two digit format
+mov rsi,char_ans+1 ;pointing to last index in 2 byte char_ans
+back: ;lable
+mov rdx,0 ; as here remainder gets stored (garbage avoidance)
+div rbx
+cmp dl , 09h
+jbe add30 ; if less than/equal to 9 , then jump and directly add 30
+ ; else add 7 also and then 30 also , i.e. 37
+add dl,07h
+add30:
+add dl, 30h
+mov [rsi],dl
+dec rsi
+dec rcx
+jnz back ; like a loop, rcx !=0 go back 
+print char_ans,2
+ret
+Exit
+;----------------------------------------------------------------------------------

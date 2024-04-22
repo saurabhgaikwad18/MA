@@ -1,0 +1,57 @@
+section .data
+msg db 10,10,"Enter the string: "
+msg_len equ $-msg
+smsg db 10,10,"The length of the string is :"
+smsg_len equ $-smsg
+section .bss
+string resb 50
+stringl equ $-string
+count resb 1
+char_ans resb 2  ;to store our answer in char_ans variable
+%macro print 2
+    mov rax, 1       ; syscall: write
+    mov rdi, 1       ; file descriptor: STDOUT
+    mov rsi, %1      ; pointer to the message content
+    mov rdx, %2      ; length of the message
+    syscall
+%endmacro
+%macro exit 0 ;0 parameters
+mov rax,60
+mov rdi,0
+syscall
+%endmacro
+%macro read 2
+mov rax,0
+mov rdi,0
+mov rsi,%1
+mov rdx,%2
+syscall
+%endmacro
+section .text
+global _start
+_start:
+    print msg,msg_len
+    read string,stringl
+    mov [count],rax
+    print smsg,smsg_len
+    mov rax,[count]
+    call display
+exit
+display:
+    mov rbx, 16      ; divisor
+    mov rcx, 2       ; number of digits to convert
+    mov rsi, char_ans+1 ; pointer to the second byte of char_ans
+cnt:
+ mov rdx, 0       ; clear remainder
+    div rbx          ; rdx:rax / rbx -> quotient in rax, remainder in rdx
+    cmp dl, 9        ; compare remainder with 9
+    jbe add30        ; jump if below or equal to 9
+    add dl, 7        ; adjust remainder for A-F in hexadecimal
+add30:
+    add dl, 30h      ; convert remainder to ASCII code
+    mov [rsi], dl    ; store the ASCII code in the char_ans buffer
+    dec rsi          ; move the pointer one byte back
+    dec rcx          ; decrement the count of remaining digits
+    jnz cnt          ; if not zero then repeat
+    print char_ans, 2 ; call the macro to print the result
+    ret

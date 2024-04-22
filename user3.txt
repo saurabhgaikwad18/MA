@@ -1,0 +1,73 @@
+section .data
+array dq 01h,-02h,-07h,13h,17h
+n equ 5
+pmsg db 0ah,"Positive numbers = "
+plen equ $-pmsg
+nmsg db 0ah,"Negative numbers = "
+nlen equ $-nmsg
+%macro print 2
+mov rax,1
+mov rdi,1
+mov rsi,%1
+mov rdx,%2
+syscall
+%endmacro
+%macro Exit 0
+mov rax,60
+mov rdi,0
+syscall
+%endmacro
+section .bss
+char_ans resb 2
+p_count resq 1
+n_count resq 1
+section .text
+global _start
+_start:
+mov rsi,array
+mov rcx, n
+mov rbx,0
+mov rdx,0
+again:
+mov rax,[rsi]
+shl rax,1
+jc negative
+inc rbx
+jmp next
+negative:
+inc rdx
+next:
+add rsi,8
+dec rcx
+jnz again
+mov [p_count],rbx
+mov [n_count],rdx 
+print pmsg,plen
+mov rax,[p_count]
+call display
+print nmsg,nlen
+mov rax,[n_count]
+call display
+Exit
+ Exit
+;-----------------------------------------------------------------------------------------------------------
+display: ;procedure
+mov rbx, 16 ;to divide by 16
+mov rcx,2 ;for getting in two digit format
+mov rsi,char_ans+1 ;pointing to last index in 2 byte char_ans
+back: ;lable
+mov rdx,0 ; as here remainder gets stored (garbage avoidance)
+div rbx
+cmp dl , 09h
+jbe add30 ; if less than/equal to 9 , then jump and directly add 30
+ ; else add 7 also and then 30 also , i.e. 37
+add dl,07h
+add30:
+add dl, 30h
+mov [rsi],dl
+dec rsi
+dec rcx
+jnz back ; like a loop, rcx !=0 go back 
+print char_ans,2
+ret
+Exit

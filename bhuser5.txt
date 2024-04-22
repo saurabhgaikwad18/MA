@@ -1,0 +1,76 @@
+section .data
+bmsg db 10,"Enter 5 digit BCD number: "
+bmsg_len equ $-bmsg
+hmsg db 10,"Your HEX number is: "
+hmsg_len equ $-hmsg
+%macro print 2
+mov rax,1
+mov rdi,1
+mov rsi,%1
+mov rdx,%2
+syscall
+%endmacro
+%macro Read 2
+mov rax,0
+mov rdi,0
+mov rsi,%1
+mov rdx,%2
+syscall
+%endmacro
+%macro Exit 0
+mov rax,60
+mov rdi,0
+syscall
+%endmacro
+section .bss
+char_ans resb 4 ;CHANGED
+anss resw 1
+buf resb 6
+section .text
+global _start
+_start:
+call BCD_to_HEX
+Exit
+BCD_to_HEX:
+print bmsg,bmsg_len
+Read buf,6
+mov rsi,buf
+xor rax,rax
+mov rbp,5
+mov rbx,10 ;ax*bx+cl
+nextt:
+xor cx,cx
+mul bx
+mov cl,[rsi]
+sub cl,30h
+add ax,cx
+inc rsi
+dec rbp
+jnz nextt
+mov [anss],ax
+print hmsg,hmsg_len
+mov ax,[anss]
+call display
+ret
+;-----------------------------------------------------------------------------------------------
+ ;DISPLAY is CHANGED little bit in this code (3 changes)
+ 
+display: 
+ mov rsi,char_ans+3 ;change 2
+ mov rcx,4 ;change 1 
+mov rbx, 16 ;
+back: ;lable
+mov rdx,0 ; as here remainder gets stored (garbage avoidance)
+div rbx
+cmp dl , 09h
+jbe add30 ; if less than/equal to 9 , then jump and directly add 30
+ ; else add 7 also and then 30 also , i.e. 37
+add dl,07h
+add30:
+add dl, 30h
+mov [rsi],dl
+dec rsi
+dec rcx
+jnz back ; like a loop, rcx !=0 go back 
+print char_ans,4 ;change 3
+ret

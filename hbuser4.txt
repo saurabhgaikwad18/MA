@@ -1,0 +1,90 @@
+section .data
+ hmsg db "Enter 4 digit hex number : "
+ hmsg_len equ $-hmsg
+ bmsg db 10,"BCD equivalent number : "
+ bmsg_len equ $-bmsg
+ errmsg db 10,"Enter correct hex number."
+ errmsg_len equ $-errmsg
+section .bss
+ char_ans resb 1
+ buf resb 5
+%macro print 2
+ mov rax,1
+ mov rdi,1
+ mov rsi,%1
+ mov rdx,%2
+ syscall
+%endmacro
+%macro read 2
+ mov rax,0
+ mov rdi,0
+ mov rsi,%1
+ mov rdx,%2
+ syscall
+%endmacro
+%macro exit 0
+ mov rax,60
+ mov rdi,0
+ syscall
+%endmacro
+section .text
+global _start
+_start:
+ call hex_bcd
+ exit
+hex_bcd:
+ print hmsg,hmsg_len
+ call accept
+ mov ax,bx
+ mov bx,10
+ xor bp,bp
+back:
+ mov dx,0
+ div bx
+ push dx
+ inc bp
+ cmp ax,0
+ jne back
+ print bmsg,bmsg_len
+back1:
+ pop dx
+ add dl,30h
+ mov [char_ans],dl
+ print char_ans,1
+ dec bp
+ jnz back1
+ ret
+accept:
+ read buf,5
+ mov rcx,4
+ mov rsi,buf
+ mov bx,0
+nextbyte:
+ shl bx,4
+ mov al,[rsi]
+ cmp al,'0'
+ jb error
+ cmp al,'9'
+ jbe sub30
+ cmp al,'A'
+ jb error
+ cmp al,'F'
+ jbe sub37
+ cmp al,'a'
+ jb error
+ cmp al,'f'
+ jbe sub57
+error:
+ print errmsg,errmsg_len
+ exit
+sub57:
+ sub al,20h
+sub37:
+ sub al,07h
+sub30:
+ sub al,30h
+ add bx,ax
+ inc rsi
+ dec rcx
+ jnz nextbyte
+ ret
