@@ -1,0 +1,103 @@
+section .data
+colon db ":"
+rmsg db 10,'Processor is in Real Mode...'
+rmsg_len equ $-rmsg
+pmsg db 10,'Processor is in Protected Mode...'
+pmsg_len equ $-pmsg
+gmsg db 10,"GDTR (Global Descriptor Table Register): "
+gmsg_len equ $-gmsg
+imsg db 10,"IDTR (Interrupt Descriptor Table Register): "
+imsg_len equ $-imsg
+lmsg db 10,"LDTR (Local Descriptor Table Register): "
+lmsg_len equ $-lmsg
+tmsg db 10,"TR (Task Register): "
+tmsg_len equ $-tmsg
+mmsg db 10,"MSW (Machine Status Word): "
+mmsg_len equ $-mmsg
+Section .bss
+gdtr resw 3
+idtr resw 3
+ldtr resw 1
+tr resw 1
+msw resw 1
+char_ans resb 4
+%macro print 2
+mov rax,1
+mov rdi,1
+mov rsi,%1
+mov rdx,%2
+syscall
+%endmacro
+%macro read 2
+mov rax,0
+mov rdi,0
+mov rsi,%1
+mov rdx,%2
+syscall
+%endmacro
+%macro exit 0
+mov rax,60
+mov rdi,0
+syscall
+%endmacro
+section .text
+global _start
+_start:
+smsw [msw]
+mov rax,[msw]
+ror rax,1
+jc p_mode
+print rmsg,rmsg_len
+jmp next
+p_mode:
+print pmsg,pmsg_len
+next:
+sgdt [gdtr]
+sidt [idtr]
+sldt [ldtr]
+str [tr]
+smsw [msw]
+print gmsg, gmsg_len
+mov ax,[gdtr + 4]
+call display
+mov ax,[gdtr + 2]
+call display
+print colon,1
+mov ax,[gdtr + 0]
+call display
+print imsg, imsg_len
+mov ax,[idtr + 4]
+call display
+mov ax,[idtr + 2]
+call display
+print colon,1
+mov ax,[idtr + 0]
+call display
+print lmsg, lmsg_len
+mov ax,[ldtr]
+call display
+print tmsg, tmsg_len
+mov ax,[tr]
+call display
+print mmsg, mmsg_len
+mov ax,[msw]
+call display
+exit
+display:
+mov rbx,16
+mov rcx,4
+mov rsi,char_ans + 3
+next_digit:
+mov rdx,0
+div rbx
+cmp dl,09h
+jbe add30
+add dl,07h
+add30:
+add dl,30h
+mov [rsi],dl
+dec rsi
+dec rcx
+jnz next_digit
+print char_ans,4
+ret
